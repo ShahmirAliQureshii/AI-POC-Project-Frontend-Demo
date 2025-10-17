@@ -11,6 +11,74 @@ from collections import Counter, defaultdict
 
 from PIL import Image
 
+# ...existing code...
+import pickle
+import numpy as np
+
+def save_known_embeddings():
+    """Persist current known_faces to disk."""
+    emb_path = os.path.join(os.path.dirname(__file__), "known_embeddings.pkl")
+    try:
+        with open(emb_path, "wb") as f:
+            pickle.dump(MODELS["known_faces"], f)
+        logger.info("Saved known embeddings (%d entries) to %s", len(MODELS["known_faces"]), emb_path)
+        return True
+    except Exception as e:
+        logger.warning("Failed to save known embeddings: %s", e)
+        return False
+
+def add_known_face_from_images(name: str, image_paths: List[str]) -> Dict[str, Any]:
+    """
+    Create/append embeddings for `name` from provided list of local image file paths.
+    Returns { ok: True, stored: N } or error.
+    """
+    load_models()
+    if MODELS.get("embedder") is None:
+        raise RuntimeError("embedder (keras-facenet) not loaded. Install and restart backend.")
+
+    embeddings = []
+    for p in image_paths:
+        try:
+            img = cv2.imread(p)
+            if img is None:
+                continue
+            rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            faces = []
+            if MODELS["detector"]:
+                try:
+                    faces = MODELS["detector"].detect_faces(rgb)
+                except Exception:
+                    faces = []
+            # prefer first detected face; otherwise use full image
+            if faces:
+                face = faces[0]
+                x, y, w, h = face.get("box", (0, 0, 0, 0))
+                x, y = max(0, x), max(0, y)
+                x2 = min(x + max(0, w), rgb.shape[1] - 1)
+                y2 = min(y + max(0, h), rgb.shape[0] - 1)
+                crop = rgb[y:y2, x:x2]
+            else:
+                crop = rgb
+            # resize to expected embedder input (FaceNet) and compute embedding
+            try:
+                resized = cv2.resize(crop, (160, 160))
+                emb = MODELS["embedder"].embeddings([resized])[0]
+                embeddings.append(np.array(emb, dtype=float))
+            except Exception as e:
+                logger.warning("failed to embed %s: %s", p, e)
+                continue
+        except Exception as e:
+            logger.warning("error processing training image %s: %s", p, e)
+    if not embeddings:
+        return {"ok": False, "error": "no embeddings computed"}
+
+    # average embeddings for this person
+    mean_emb = np.mean(np.stack(embeddings), axis=0)
+    MODELS["known_faces"][name] = mean_emb
+    saved = save_known_embeddings()
+    return {"ok": True, "stored": 1, "name": name, "saved": bool(saved)}
+# ...existing code...
+
 # Globals / lazy-loaded models
 MODELS = {
     "detector": None,

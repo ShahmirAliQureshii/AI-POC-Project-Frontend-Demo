@@ -23,6 +23,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ...existing code...
+from fastapi import HTTPException
+
+@app.post("/api/train/add")
+async def api_add_known(name: str = Form(...), files: list[UploadFile] = File(...)):
+    """
+    Upload one or more images for a person and add/update their embedding.
+    Returns JSON { ok: True, stored: N }.
+    """
+    if not name:
+        raise HTTPException(status_code=400, detail="missing name")
+    saved_paths = []
+    for f in files:
+        dest = os.path.join(UPLOAD_DIR, f.filename)
+        async with aiofiles.open(dest, "wb") as out:
+            while chunk := await f.read(1024 * 1024):
+                await out.write(chunk)
+        saved_paths.append(dest)
+    try:
+        res = face_core.add_known_face_from_images(name, saved_paths)
+        return JSONResponse(res)
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)})
+# ...existing code...
+
+
+
 # NOTE: point BASE_DIR to the backend package folder so uploads match face_core paths
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))  # backend/
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
