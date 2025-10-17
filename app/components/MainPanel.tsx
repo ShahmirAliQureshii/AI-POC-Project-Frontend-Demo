@@ -131,7 +131,7 @@ export default function MainPanel({
           <label className="block text-sm font-medium text-slate-700">Upload Training Archive / Images</label>
           <input
             type="file"
-            {...({ webkitdirectory: true, directory: true } as any)}
+            {...({ webkitdirectory: "true", directory: "true" } as any)}
             multiple
             onChange={(e) => handleFilePlaceholder(e, "Training")}
             className="block w-full text-sm text-slate-600"

@@ -14,7 +14,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      {/* suppressHydrationWarning prevents React from logging mismatches for this element */}
       <body
+        suppressHydrationWarning
         className={`${inter.variable} font-sans bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 text-slate-900 min-h-screen`}
       >
         {children}
