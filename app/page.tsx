@@ -6,6 +6,7 @@ import HeroSection from "./components/hero";
 import Footer from "./components/footer";
 import MainPanel from "./components/MainPanel";
 import RightAside from "./components/RightAside";
+import { processImagesOnServer } from "../lib/api";
 
 export default function Home(): React.ReactElement {
   const [active, setActive] = useState<string>("Dashboard");
@@ -31,24 +32,28 @@ export default function Home(): React.ReactElement {
 
   function processImages(files?: FileList | null) {
     const f = Array.from(files || []);
-    const rec = f
-      .filter((_, i) => i % 2 === 0)
-      .map((file, i) => ({
-        id: `img-rec-${i}`,
-        name: file.name || `image-${i + 1}`,
-        thumb: URL.createObjectURL(file),
-      }));
-    const unrec = f
-      .filter((_, i) => i % 2 !== 0)
-      .map((file, i) => ({
-        id: `img-un-${i}`,
-        name: file.name || `image-${i + 1}`,
-        thumb: URL.createObjectURL(file),
-      }));
-    setRecognized(rec);
-    setUnrecognized(unrec);
-    setMessage(`Processed ${f.length} image(s) (demo)`);
-    setTimeout(() => setMessage(null), 2500);
+    if (!f.length) {
+      setMessage("No files selected");
+      setTimeout(() => setMessage(null), 2000);
+      return;
+    }
+
+    // call backend
+    processImagesOnServer(f)
+      .then((res) => {
+        if (res?.ok && res.results) {
+          setRecognized(res.results.recognized ?? []);
+          setUnrecognized(res.results.unrecognized ?? []);
+          setMessage(`Processed ${f.length} images (server)`);
+        } else {
+          setMessage("Processing failed (server)");
+        }
+      })
+      .catch((err) => {
+        console.error("processImages error", err);
+        setMessage("Server error processing images");
+      })
+      .finally(() => setTimeout(() => setMessage(null), 2500));
   }
 
   function processVideoDetections(demoList: Array<any> = []) {

@@ -3,6 +3,7 @@
 import React from "react";
 import ResultsTabs from "./ResultsTabs";
 import VideoPlayer from "./VideoPlayer";
+import { uploadYolo } from "../../lib/api";
 
 type PersonCard = { name: string; status: "Active" | "Idle" | string; img: string };
 type SampleStats = {
@@ -153,6 +154,22 @@ export default function MainPanel({
             <div className="rounded-lg border p-4">
               <h3 className="text-sm font-medium">YOLO Model</h3>
               <p className="mt-2 text-sm text-slate-500">Upload .pt to preview (placeholder)</p>
+              <input
+                type="file"
+                accept=".pt"
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  const res = await uploadYolo(f);
+                  if (res?.ok) {
+                    // show a message or keep model path
+                    alert("YOLO model uploaded (server): " + (res.path ?? f.name));
+                  } else {
+                    alert("YOLO upload failed");
+                  }
+                }}
+                className="mt-3 text-sm"
+              />
             </div>
           </div>
         </div>
