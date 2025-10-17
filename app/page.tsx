@@ -30,15 +30,19 @@ export default function Home(): React.ReactElement {
     setTimeout(() => setMessage(null), 2500);
   }
 
-  function processImages(files?: FileList | null) {
-    const f = Array.from(files || []);
-    if (!f.length) {
-      setMessage("No files selected");
-      setTimeout(() => setMessage(null), 2000);
-      return;
-    }
+  // ...existing code...
+function processImages(files?: FileList | null) {
+  // ...existing code...
+  // replace with:
+  const f = Array.from(files || []);
+  if (!f.length) {
+    setMessage("No files selected");
+    setTimeout(() => setMessage(null), 2000);
+    return;
+  }
 
-    // call backend
+  // call backend
+  import("../lib/api").then(({ processImagesOnServer }) => {
     processImagesOnServer(f)
       .then((res) => {
         if (res?.ok && res.results) {
@@ -54,7 +58,9 @@ export default function Home(): React.ReactElement {
         setMessage("Server error processing images");
       })
       .finally(() => setTimeout(() => setMessage(null), 2500));
-  }
+  });
+}
+// ...existing code...
 
   function processVideoDetections(demoList: Array<any> = []) {
     const rec = demoList.filter((d) => d.status === "recognized");

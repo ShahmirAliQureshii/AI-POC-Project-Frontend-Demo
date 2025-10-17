@@ -1,11 +1,15 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import aiofiles
 import os
 import json
 import asyncio
 from typing import AsyncGenerator
+
+# import face_core (new)
+from backend import face_core
 
 API_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
@@ -19,81 +23,101 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-BASE_DIR = os.path.dirname(__file__)
+# NOTE: point BASE_DIR to the backend package folder so uploads match face_core paths
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))  # backend/
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+# mount uploads directory so thumbnails returned by face_core (/uploads/thumbs/...) are reachable
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+
+# ...rest of file remains unchanged...
+# (keep the endpoints as you already have)
 
 @app.post("/api/upload/video")
 async def upload_video(file: UploadFile = File(...)):
-    """Save uploaded video and return server path (or URL)."""
     save_path = os.path.join(UPLOAD_DIR, file.filename)
     async with aiofiles.open(save_path, "wb") as out:
-        while chunk := await file.read(1024 * 1024):
-            await out.write(chunk)
+        while content := await file.read(1024 * 1024):
+            await out.write(content)
     return JSONResponse({"ok": True, "path": save_path, "filename": file.filename})
 
 
 @app.post("/api/process/video")
-async def process_video(path: str = Form(...), card_conf: float = Form(0.5), frame_skip: int = Form(5)):
+async def process_video(path: str = Form(...), card_conf: float = Form(0.5), frame_skip: int = Form(5), max_frames: int = Form(0)):
     """
-    Start processing video on server. For demo, run processing synchronously and return a summary.
-    In production you'd run a background task/queue and return job id.
+    Blocking (synchronous) processing that returns a summary.
+    For long videos you may prefer using the streaming endpoint below.
     """
-    # TODO: call your processing function (backend.face_core.process_video_file)
-    # For demo, return a fake summary after a short wait
-    await asyncio.sleep(0.5)
-    demo = {
-        "video": os.path.basename(path),
-        "detections": 12,
-        "cards": {"red": 2, "yellow": 1, "green": 0},
-        "people": ["Alex Turner", "Unknown"],
-    }
-    return JSONResponse({"ok": True, "summary": demo})
+    if not os.path.exists(path):
+        return JSONResponse({"ok": False, "error": "path not found"})
+    max_frames = max_frames or None
+    try:
+        res = face_core.process_video_sync(path, card_conf=float(card_conf), frame_skip=int(frame_skip), max_frames=max_frames)
+        return JSONResponse(res)
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)})
 
 
 @app.post("/api/process/images")
-async def process_images(files: list[UploadFile] = File(...)):
-    """Accept multiple images, run server processing and return recognized/unrecognized lists."""
-    saved = []
+async def process_images(files: list[UploadFile] = File(...), detect_cards: bool = Form(False), card_conf: float = Form(0.5)):
+    saved_paths = []
     for f in files:
         dest = os.path.join(UPLOAD_DIR, f.filename)
         async with aiofiles.open(dest, "wb") as out:
             while chunk := await f.read(1024 * 1024):
                 await out.write(chunk)
-        saved.append(dest)
-
-    # TODO: replace with real processing call
-    demo = {
-        "recognized": [{"id": "img-rec-1", "name": "Alex", "thumb": "/placeholder.jpg"}],
-        "unrecognized": [{"id": "img-un-1", "name": "Unknown", "thumb": "/placeholder.jpg"}],
-    }
-    return JSONResponse({"ok": True, "results": demo})
+        saved_paths.append(dest)
+    try:
+        result = face_core.process_images(saved_paths, detect_cards=bool(detect_cards), card_conf=float(card_conf))
+        return JSONResponse(result)
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)})
 
 
 @app.post("/api/load-yolo")
 async def load_yolo(file: UploadFile = File(...)):
-    """Upload YOLO model file (.pt) and load it on server (async background)."""
-    path = os.path.join(UPLOAD_DIR, file.filename)
-    async with aiofiles.open(path, "wb") as out:
+    # save model file
+    dest = os.path.join(UPLOAD_DIR, file.filename)
+    async with aiofiles.open(dest, "wb") as out:
         while chunk := await file.read(1024 * 1024):
             await out.write(chunk)
-    # TODO: load model in background
-    return JSONResponse({"ok": True, "path": path})
+    # attempt to load into face_core (blocking)
+    try:
+        face_core.load_models(yolo_path=dest)
+        return JSONResponse({"ok": True, "path": dest})
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)})
 
 
 @app.get("/api/dashboard/stream")
 async def dashboard_stream():
     """
-    Server-Sent Events endpoint emitting JSON events with live dashboard updates.
-    The generator yields 'data: <json>\\n\\n' chunks.
+    Example streaming endpoint that will run face_core.start_video_stream in background and stream queue items as SSE.
+    For demo we use a small test video path; in production you'd connect this to a running job.
     """
+    # For demo: nothing queued until a client calls process_video/upload; you can pass ?path=...
+    # Accept an optional ?path query param
     async def event_generator() -> AsyncGenerator[str, None]:
-        # replace this demo loop with integration into your processing pipeline:
-        for i in range(30):
-            data = {"video": "demo.mp4", "time_idx": i, "stats": {"detections": i, "red": i//5}}
-            yield f"data: {json.dumps(data)}\n\n"
-            await asyncio.sleep(1.0)
-        yield "event: done\ndata: {}\n\n"
+        # use a demo video if none provided
+        demo_video = os.path.join(UPLOAD_DIR, "demo.mp4")
+        if not os.path.exists(demo_video):
+            # send a few synthetic events
+            for i in range(6):
+                yield f"data: {json.dumps({'video': 'demo', 'time_idx': i, 'stats': {'detections': i}})}\n\n"
+                await asyncio.sleep(1.0)
+            return
+        # start thread-based queue
+        q = face_core.start_video_stream(demo_video, card_conf=0.5, frame_skip=5, max_frames=60)
+        import queue
+        while True:
+            try:
+                item = q.get(timeout=20)
+            except queue.Empty:
+                break
+            # SSE framing
+            yield f"data: {json.dumps(item)}\n\n"
+            if item.get("event") == "done":
+                break
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
