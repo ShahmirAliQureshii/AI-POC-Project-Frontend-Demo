@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# This script is used to start the existing Python backend for the face recognition system.
+
+# Navigate to the directory containing the Python application
+cd /path/to/your/python/app
+
+# Activate the virtual environment if applicable
+source venv/bin/activate
+
+# Run the Python application
+python face_recognition_system_dashboard_cards_fixed.py
+
+# Note: Adjust the path to your Python application and the script name as necessary.

@@ -1,0 +1,37 @@
+{
+  "name": "face-recognition-nextjs-site",
+  "version": "1.0.0",
+  "description": "A Next.js application for a face recognition system with a live dashboard, model viewer, and contact form.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "face-recognition",
+    "nextjs",
+    "dashboard",
+    "model-viewer",
+    "contact-form"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "autoprefixer": "^10.4.2",
+    "axios": "^0.21.1",
+    "framer-motion": "^12.23.24",
+    "next": "latest",
+    "postcss": "^8.4.5",
+    "react": "latest",
+    "react-dom": "latest",
+    "tailwindcss": "^2.2.19"
+  },
+  "devDependencies": {
+    "eslint": "^7.32.0",
+    "eslint-config-next": "^12.0.7",
+    "prettier": "^2.5.1"
+  }
+}
