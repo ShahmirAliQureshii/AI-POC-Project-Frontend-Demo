@@ -1,9 +1,15 @@
 "use client";
+import React from "react";
 import { motion } from "framer-motion";
 
-export default function HeroSection({active, setActive}) {
+interface Props {
+  active: string;
+  setActive: (tab: string) => void;
+}
+
+export default function HeroSection({ active, setActive }: Props): React.ReactElement {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-b  via-gray-950 text-black">
+    <main className="relative min-h-screen overflow-hidden bg-gradient-to-b via-gray-950 text-black">
       {/* Hero Section */}
       <section className="flex flex-col items-center justify-center h-screen px-6 text-center">
         <motion.h1
@@ -31,10 +37,16 @@ export default function HeroSection({active, setActive}) {
           transition={{ delay: 1.2, duration: 1 }}
           className="mt-10 flex gap-6"
         >
-          <button className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full text-lg font-semibold hover:scale-105 transition-transform duration-300 shadow-lg">
+          <button
+            onClick={() => setActive("Image")}
+            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full text-lg font-semibold hover:scale-105 transition-transform duration-300 shadow-lg"
+          >
             Get Started
           </button>
-          <button className="px-8 py-3 border border-gray-500 rounded-full text-lg font-semibold hover:bg-gray-800 transition duration-300">
+          <button
+            onClick={() => setActive("Training")}
+            className="px-8 py-3 border border-gray-500 rounded-full text-lg font-semibold hover:bg-gray-800 transition duration-300"
+          >
             Learn More
           </button>
         </motion.div>
@@ -56,7 +68,6 @@ export default function HeroSection({active, setActive}) {
           our AI solutions are built for speed, precision, and creativity.
         </p>
       </section>
-
 
       {/* Background Glow Effect */}
       <div className="absolute inset-0 -z-10">

@@ -1,23 +1,30 @@
-'use client'
-import { useState } from "react";
+"use client";
 
-export default function ResultsTabs({ recognized = [], unrecognized = [], emptyMessage = "No results" }) {
-  const [tab, setTab] = useState("recognized");
+import React, { useState } from "react";
+
+interface ResultItem {
+  id: string;
+  name: string;
+  thumb?: string;
+}
+
+interface Props {
+  recognized?: ResultItem[];
+  unrecognized?: ResultItem[];
+  emptyMessage?: string;
+}
+
+export default function ResultsTabs({ recognized = [], unrecognized = [], emptyMessage = "No results" }: Props) {
+  const [tab, setTab] = useState<"recognized" | "unrecognized">("recognized");
 
   return (
     <div className="bg-white rounded-xl border p-3 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setTab("recognized")}
-            className={`px-3 py-1 rounded-lg text-sm font-medium ${tab === "recognized" ? "bg-indigo-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}
-          >
+          <button onClick={() => setTab("recognized")} className={`px-3 py-1 rounded-lg text-sm font-medium ${tab === "recognized" ? "bg-indigo-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}>
             Recognized ({recognized.length})
           </button>
-          <button
-            onClick={() => setTab("unrecognized")}
-            className={`px-3 py-1 rounded-lg text-sm font-medium ${tab === "unrecognized" ? "bg-rose-500 text-white" : "text-slate-600 hover:bg-slate-100"}`}
-          >
+          <button onClick={() => setTab("unrecognized")} className={`px-3 py-1 rounded-lg text-sm font-medium ${tab === "unrecognized" ? "bg-rose-500 text-white" : "text-slate-600 hover:bg-slate-100"}`}>
             Unrecognized ({unrecognized.length})
           </button>
         </div>
@@ -30,7 +37,7 @@ export default function ResultsTabs({ recognized = [], unrecognized = [], emptyM
             <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {recognized.map((r) => (
                 <li key={r.id} className="flex items-center gap-3 bg-slate-50 p-2 rounded-md">
-                  <img src={r.thumb} alt={r.name} className="w-12 h-12 rounded-md object-cover" />
+                  {r.thumb && <img src={r.thumb} alt={r.name} className="w-12 h-12 rounded-md object-cover" />}
                   <div className="flex-1">
                     <div className="font-medium text-sm">{r.name}</div>
                     <div className="text-xs text-slate-500">Matched • demo</div>
@@ -45,7 +52,7 @@ export default function ResultsTabs({ recognized = [], unrecognized = [], emptyM
           <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {unrecognized.map((r) => (
               <li key={r.id} className="flex items-center gap-3 bg-slate-50 p-2 rounded-md">
-                <img src={r.thumb} alt={r.name} className="w-12 h-12 rounded-md object-cover" />
+                {r.thumb && <img src={r.thumb} alt={r.name} className="w-12 h-12 rounded-md object-cover" />}
                 <div className="flex-1">
                   <div className="font-medium text-sm">{r.name}</div>
                   <div className="text-xs text-slate-500">Unknown • demo</div>

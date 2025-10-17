@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import Header from "./components/header";
 import HeroSection from "./components/hero";
 import Footer from "./components/footer";
-import ResultsTabs from "./ResultsTabs";
-import VideoPlayer from "./VideoPlayer";
 import MainPanel from "./components/MainPanel";
 import RightAside from "./components/RightAside";
 
-export default function Home() {
-  const [active, setActive] = useState("Dashboard");
-  const [message, setMessage] = useState(null);
+export default function Home(): React.ReactElement {
+  const [active, setActive] = useState<string>("Dashboard");
+  const [message, setMessage] = useState<string | null>(null);
 
   const sampleStats = useMemo(
     () => ({
@@ -22,16 +20,16 @@ export default function Home() {
     []
   );
 
-  const [recognized, setRecognized] = useState([]);
-  const [unrecognized, setUnrecognized] = useState([]);
+  const [recognized, setRecognized] = useState<Array<any>>([]);
+  const [unrecognized, setUnrecognized] = useState<Array<any>>([]);
 
-  function handleFilePlaceholder(e, label) {
+  function handleFilePlaceholder(e: React.ChangeEvent<HTMLInputElement> | null, label: string) {
     const count = e?.target?.files?.length || 0;
     setMessage(`${label}: ${count} file(s) selected (placeholder)`);
     setTimeout(() => setMessage(null), 2500);
   }
 
-  function processImages(files) {
+  function processImages(files?: FileList | null) {
     const f = Array.from(files || []);
     const rec = f
       .filter((_, i) => i % 2 === 0)
@@ -53,7 +51,7 @@ export default function Home() {
     setTimeout(() => setMessage(null), 2500);
   }
 
-  function processVideoDetections(demoList = []) {
+  function processVideoDetections(demoList: Array<any> = []) {
     const rec = demoList.filter((d) => d.status === "recognized");
     const unrec = demoList.filter((d) => d.status === "unrecognized");
     setRecognized(rec);
@@ -67,14 +65,10 @@ export default function Home() {
   return (
     <main className="mx-auto max-w-7xl px-6 py-8">
       <Header active={active} setActive={setActive} />
-      {active === "Home" && (
-        <HeroSection active={active} setActive={setActive} />
-      )}
+      {active === "Home" && <HeroSection active={active} setActive={setActive} />}
 
       <section
-        className={`mt-8 grid grid-cols-1 ${
-          showAside ? "lg:grid-cols-4" : "lg:grid-cols-1"
-        } gap-6`}
+        className={`mt-8 grid grid-cols-1 ${showAside ? "lg:grid-cols-4" : "lg:grid-cols-1"} gap-6`}
       >
         <div className={showAside ? "lg:col-span-3 space-y-6" : "space-y-6"}>
           <MainPanel

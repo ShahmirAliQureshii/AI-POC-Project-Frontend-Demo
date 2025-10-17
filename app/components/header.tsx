@@ -1,15 +1,20 @@
-import { useState } from "react";
+"use client";
+import React from "react";
 
+interface Props {
+  active: string;
+  setActive: (tab: string) => void;
+}
 
-export default function Header({active, setActive}) {
-  const tabs = ["Home","Training", "Model Viewer", "Image", "Video", "Dashboard"];
+export default function Header({ active, setActive }: Props): React.ReactElement {
+  const tabs = ["Home", "Training", "Model Viewer", "Image", "Video", "Dashboard"];
 
   return (
     <header className="flex items-center justify-between gap-6">
       <div className="flex items-center gap-4">
         <div className="rounded-full bg-gradient-to-tr from-indigo-600 to-cyan-400 p-3 shadow-lg">
           <svg
-          onClick={()=> setActive("Home")}
+            onClick={() => setActive("Home")}
             xmlns="http://www.w3.org/2000/svg"
             className="h-6 w-6 text-white cursor-pointer"
             fill="none"
@@ -24,11 +29,13 @@ export default function Header({active, setActive}) {
             />
           </svg>
         </div>
+
         <div>
-          <h1 className="text-2xl font-semibold cursor-pointer">Face Recognition Web</h1>
+          <h1 className="text-2xl font-semibold cursor-pointer" onClick={() => setActive("Home")}>
+            Face Recognition Web
+          </h1>
           <p className="text-sm text-slate-500 cursor-pointer">
-            Modern UI for the desktop face recognition system — frontend-only
-            demo
+            Modern UI for the desktop face recognition system — frontend-only demo
           </p>
         </div>
       </div>
@@ -39,9 +46,7 @@ export default function Header({active, setActive}) {
             key={t}
             onClick={() => setActive(t)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-              active === t
-                ? "bg-indigo-600 text-white shadow"
-                : "text-slate-700 hover:bg-slate-100"
+              active === t ? "bg-indigo-600 text-white shadow" : "text-slate-700 hover:bg-slate-100"
             }`}
           >
             {t}
